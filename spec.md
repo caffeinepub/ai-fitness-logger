@@ -1,27 +1,29 @@
 # AI Fitness Logger
 
 ## Current State
-The app has a Suggestions page with AI workout recommendations (progressive overload, variety, base building). It uses workout session data and user profile data. The dashboard shows calories burned stats.
+The app has Dashboard, Log Workout, History, AI Suggestions, Profile, Survey, and AI Mentor tabs. There is a monetization system (5 free trials, ₹500/month subscription), interstitial ads, and a sponsor banner. No streak, rewards, or challenge features exist.
 
 ## Requested Changes (Diff)
 
 ### Add
-- AI Protein Intake card on the Suggestions page that calculates daily protein intake recommendation based on:
-  - Calories burned in recent workouts (from session data)
-  - User body weight and fitness goal (from profile)
-  - Post-workout protein boost formula tied to calorie expenditure
-- Display: daily protein goal (g), protein per meal suggestion (3 meals), post-workout protein recommendation
-- Visual breakdown: base protein (from weight/goal), workout bonus protein (from calories burned)
+- **Streaks system**: Track consecutive workout days. Store/read from localStorage. Show current streak, longest streak, and a 7-day mini calendar heatmap on a new Challenges page.
+- **Daily Challenges**: A set of rotating daily challenges (e.g., "Log a leg workout", "Burn 200+ kcal", "Complete 3 sets of bench press"). Challenges reset each calendar day. Completion tracked in localStorage.
+- **Rewards/Badges**: Earn badges for milestones (e.g., 7-day streak, 30 workouts logged, first 500 kcal session). Display earned/locked badges on the Challenges page.
+- **Streak widget on Dashboard**: Small streak counter card in the stats row (🔥 streak flame icon).
+- **Challenges nav link**: Add "Challenges" tab to navigation.
 
 ### Modify
-- Suggestions.tsx: add ProteinIntakeCard component above or below existing suggestions
+- `Layout.tsx`: Add Challenges nav item.
+- `App.tsx`: Register `/challenges` route.
+- `Dashboard.tsx`: Add streak counter card to the stats grid.
 
 ### Remove
-- Nothing
+- Nothing removed.
 
 ## Implementation Plan
-1. Add `ProteinIntakeCard` component in Suggestions.tsx
-2. Use `useUserProfile` and `useWorkoutSessions` hooks (already available)
-3. Calculate: base = weight_kg * goal_multiplier (0.8 for general, 1.2 for endurance, 1.6 for muscle gain, 1.0 for weight loss), workout_bonus = avg_daily_calories_burned * 0.05
-4. Show total daily protein, per-meal split, and post-workout serving recommendation
-5. Show a placeholder with profile prompt if no profile set
+1. Create `src/frontend/src/context/StreakContext.tsx` -- manages streak state, daily challenges, and badge logic using localStorage.
+2. Create `src/frontend/src/pages/Challenges.tsx` -- full Challenges page: streak display, 7-day heatmap, daily challenges list, rewards/badges grid.
+3. Update `App.tsx` -- add `/challenges` route.
+4. Update `Layout.tsx` -- add Challenges nav item with Trophy icon.
+5. Update `Dashboard.tsx` -- add streak stat card in stats grid.
+6. Wrap app with `StreakProvider` in `App.tsx`.

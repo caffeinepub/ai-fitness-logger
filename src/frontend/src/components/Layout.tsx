@@ -12,6 +12,7 @@ import {
   Menu,
   Plus,
   Sparkles,
+  Trophy,
   User,
   X,
 } from "lucide-react";
@@ -36,6 +37,12 @@ const navItems = [
     label: "Suggestions",
     icon: Lightbulb,
     ocid: "nav.suggestions.link",
+  },
+  {
+    to: "/challenges",
+    label: "Challenges",
+    icon: Trophy,
+    ocid: "nav.challenges.link",
   },
   { to: "/mentor", label: "AI Mentor", icon: Bot, ocid: "nav.mentor.link" },
   { to: "/profile", label: "Profile", icon: User, ocid: "nav.profile.link" },

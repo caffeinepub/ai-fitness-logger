@@ -14,6 +14,7 @@ import {
   Trophy,
 } from "lucide-react";
 import { motion } from "motion/react";
+import { useStreak } from "../context/StreakContext";
 import {
   useSessionStats,
   useUserProfile,
@@ -114,43 +115,11 @@ function calcSessionWeight(
   );
 }
 
-const statCardConfig = [
-  {
-    gradientFrom: "oklch(0.84 0.24 130 / 0.18)",
-    gradientTo: "transparent",
-    borderColor: "oklch(0.84 0.24 130 / 0.5)",
-    valueClass: "text-gradient-lime",
-    iconBg: "bg-primary/10",
-    iconClass: "text-primary",
-    glowClass: "glow-lime-hover",
-    icon: Trophy,
-  },
-  {
-    gradientFrom: "oklch(0.68 0.22 45 / 0.18)",
-    gradientTo: "transparent",
-    borderColor: "oklch(0.68 0.22 45 / 0.5)",
-    valueClass: "text-accent",
-    iconBg: "bg-accent/10",
-    iconClass: "text-accent",
-    glowClass: "glow-accent-hover",
-    icon: Dumbbell,
-  },
-  {
-    gradientFrom: "oklch(0.6 0.25 20 / 0.18)",
-    gradientTo: "transparent",
-    borderColor: "oklch(0.6 0.25 20 / 0.5)",
-    valueClass: "text-destructive",
-    iconBg: "bg-destructive/10",
-    iconClass: "text-destructive",
-    glowClass: "glow-destructive-hover",
-    icon: Flame,
-  },
-];
-
 export default function Dashboard() {
   const { data: stats, isLoading: statsLoading } = useSessionStats();
   const { data: sessions, isLoading: sessionsLoading } = useWorkoutSessions();
   const { data: profile } = useUserProfile();
+  const { currentStreak } = useStreak();
 
   const displaySessions =
     sessions && sessions.length > 0 ? sessions : SAMPLE_SESSIONS;
@@ -158,8 +127,15 @@ export default function Dashboard() {
     .sort((a, b) => b.date.localeCompare(a.date))
     .slice(0, 5);
 
-  const statCards = [
+  const statCardConfig = [
     {
+      gradientFrom: "oklch(0.84 0.24 130 / 0.18)",
+      borderColor: "oklch(0.84 0.24 130 / 0.5)",
+      valueClass: "text-gradient-lime",
+      iconBg: "bg-primary/10",
+      iconClass: "text-primary",
+      glowClass: "glow-lime-hover",
+      icon: Trophy,
       label: "Total Workouts",
       value: statsLoading
         ? null
@@ -168,6 +144,13 @@ export default function Dashboard() {
           : SAMPLE_SESSIONS.length,
     },
     {
+      gradientFrom: "oklch(0.68 0.22 45 / 0.18)",
+      borderColor: "oklch(0.68 0.22 45 / 0.5)",
+      valueClass: "text-accent",
+      iconBg: "bg-accent/10",
+      iconClass: "text-accent",
+      glowClass: "glow-accent-hover",
+      icon: Dumbbell,
       label: "Total Weight Lifted",
       value: statsLoading
         ? null
@@ -176,12 +159,32 @@ export default function Dashboard() {
           : `${SAMPLE_SESSIONS.reduce((s, sess) => s + calcSessionWeight(sess.exercises), 0).toLocaleString()} kg`,
     },
     {
+      gradientFrom: "oklch(0.6 0.25 20 / 0.18)",
+      borderColor: "oklch(0.6 0.25 20 / 0.5)",
+      valueClass: "text-destructive",
+      iconBg: "bg-destructive/10",
+      iconClass: "text-destructive",
+      glowClass: "glow-destructive-hover",
+      icon: Flame,
       label: "Calories Burned",
       value: statsLoading
         ? null
         : stats
           ? `${Math.round(stats.totalCaloriesBurned).toLocaleString()} kcal`
           : `${Math.round(SAMPLE_SESSIONS.reduce((s, sess) => s + sess.totalCalories, 0)).toLocaleString()} kcal`,
+    },
+    {
+      gradientFrom: "oklch(0.65 0.22 35 / 0.18)",
+      borderColor: "oklch(0.65 0.22 35 / 0.5)",
+      valueClass: "",
+      valueStyle: { color: "oklch(0.85 0.22 40)" },
+      iconBg: "bg-orange-500/10",
+      iconClass: "",
+      iconStyle: { color: "oklch(0.75 0.22 40)" },
+      glowClass: "",
+      icon: Flame,
+      label: "Current Streak",
+      value: `${currentStreak} day${currentStreak !== 1 ? "s" : ""}`,
     },
   ];
 
@@ -242,19 +245,20 @@ export default function Dashboard() {
       )}
 
       {/* Stats */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
-        {statCards.map((stat, i) => {
-          const cfg = statCardConfig[i];
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
+        {statCardConfig.map((cfg, i) => {
           const StatIcon = cfg.icon;
           return (
             <motion.div
-              key={stat.label}
+              key={cfg.label}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.1 + i * 0.08 }}
             >
               <Card
-                className={`card-elevated transition-transform hover:scale-[1.02] cursor-default ${cfg.glowClass}`}
+                className={`card-elevated transition-transform hover:scale-[1.02] cursor-default ${
+                  cfg.glowClass ?? ""
+                }`}
                 style={{
                   borderTopColor: cfg.borderColor,
                   borderTopWidth: "1px",
@@ -262,29 +266,35 @@ export default function Dashboard() {
                 }}
                 data-ocid="dashboard.stats.card"
               >
-                <CardContent className="pt-6">
+                <CardContent className="pt-4 pb-4 px-4">
                   <div className="flex items-start justify-between">
-                    <div>
-                      <p className="text-sm text-muted-foreground">
-                        {stat.label}
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs text-muted-foreground truncate">
+                        {cfg.label}
                       </p>
-                      {stat.value === null ? (
+                      {statsLoading && i < 3 ? (
                         <Skeleton
-                          className="h-8 w-24 mt-1"
+                          className="h-7 w-16 mt-1"
                           data-ocid="dashboard.stats.loading_state"
                         />
                       ) : (
                         <p
-                          className={`text-2xl font-display font-bold mt-1 ${cfg.valueClass}`}
+                          className={`text-xl font-display font-bold mt-1 ${
+                            cfg.valueClass ?? ""
+                          }`}
+                          style={cfg.valueStyle}
                         >
-                          {stat.value}
+                          {cfg.value}
                         </p>
                       )}
                     </div>
                     <div
-                      className={`w-10 h-10 rounded-xl ${cfg.iconBg} flex items-center justify-center transition-all ${cfg.glowClass}`}
+                      className={`w-8 h-8 rounded-lg ${cfg.iconBg ?? ""} flex items-center justify-center flex-shrink-0`}
                     >
-                      <StatIcon className={`w-5 h-5 ${cfg.iconClass}`} />
+                      <StatIcon
+                        className={`w-4 h-4 ${cfg.iconClass ?? ""}`}
+                        style={cfg.iconStyle}
+                      />
                     </div>
                   </div>
                 </CardContent>
@@ -321,21 +331,38 @@ export default function Dashboard() {
         </Link>
 
         <Link
-          to="/suggestions"
-          data-ocid="dashboard.nutrition.card"
-          className="group block rounded-xl overflow-hidden relative h-44 shadow-md hover:shadow-accent/20 transition-shadow"
+          to="/challenges"
+          data-ocid="dashboard.challenges.card"
+          className="group block rounded-xl overflow-hidden relative h-44 shadow-md transition-shadow"
+          style={{
+            background:
+              "linear-gradient(135deg, oklch(0.18 0.05 35) 0%, oklch(0.13 0.04 25) 100%)",
+            border: "1px solid oklch(0.6 0.22 40 / 0.4)",
+          }}
         >
-          <img
-            src="/assets/generated/nutrition-meal.dim_600x400.jpg"
-            alt="Healthy nutrition meal prep"
-            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+          <div
+            className="absolute inset-0"
+            style={{
+              background:
+                "radial-gradient(ellipse 80% 80% at 70% 30%, oklch(0.65 0.25 40 / 0.18) 0%, transparent 70%)",
+            }}
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
-          <div className="absolute bottom-0 left-0 p-4">
-            <p className="text-white font-display font-bold text-lg leading-tight">
-              Nutrition Tracker
-            </p>
-            <p className="text-white/70 text-xs mt-0.5">Fuel your gains</p>
+          <div className="relative p-4 h-full flex flex-col justify-between">
+            <div className="text-4xl">🔥</div>
+            <div>
+              <p
+                className="font-display font-bold text-lg leading-tight"
+                style={{ color: "oklch(0.9 0.12 45)" }}
+              >
+                Streaks & Challenges
+              </p>
+              <p
+                className="text-xs mt-0.5"
+                style={{ color: "oklch(0.6 0.1 40)" }}
+              >
+                Earn XP &amp; badges
+              </p>
+            </div>
           </div>
         </Link>
       </motion.div>

@@ -7,8 +7,10 @@ import {
   createRouter,
 } from "@tanstack/react-router";
 import Layout from "./components/Layout";
+import { StreakProvider } from "./context/StreakContext";
 import { SubscriptionProvider } from "./context/SubscriptionContext";
 import AIMentor from "./pages/AIMentor";
+import Challenges from "./pages/Challenges";
 import Dashboard from "./pages/Dashboard";
 import History from "./pages/History";
 import LogWorkout from "./pages/LogWorkout";
@@ -94,6 +96,12 @@ const mentorRoute = createRoute({
   component: AIMentor,
 });
 
+const challengesRoute = createRoute({
+  getParentRoute: () => layoutRoute,
+  path: "/challenges",
+  component: Challenges,
+});
+
 const routeTree = rootRoute.addChildren([
   loginRoute,
   paymentSuccessRoute,
@@ -106,6 +114,7 @@ const routeTree = rootRoute.addChildren([
     profileRoute,
     surveyRoute,
     mentorRoute,
+    challengesRoute,
   ]),
 ]);
 
@@ -120,7 +129,9 @@ declare module "@tanstack/react-router" {
 export default function App() {
   return (
     <SubscriptionProvider>
-      <RouterProvider router={router} />
+      <StreakProvider>
+        <RouterProvider router={router} />
+      </StreakProvider>
     </SubscriptionProvider>
   );
 }
