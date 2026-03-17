@@ -16,6 +16,8 @@ import { AnimatePresence, motion } from "motion/react";
 import { useState } from "react";
 import { toast } from "sonner";
 import type { ExerciseLog } from "../backend.d";
+import SubscriptionModal from "../components/SubscriptionModal";
+import { useSubscription } from "../context/SubscriptionContext";
 import { useLogWorkout } from "../hooks/useQueries";
 import { useUserProfile } from "../hooks/useQueries";
 
@@ -58,8 +60,10 @@ export default function LogWorkout() {
     },
   ]);
   const [nextId, setNextId] = useState(2);
+  const [showPaywall, setShowPaywall] = useState(false);
   const { mutateAsync: logWorkout, isPending } = useLogWorkout();
   const { data: profile } = useUserProfile();
+  const { canLog, incrementTrial } = useSubscription();
   const navigate = useNavigate();
 
   const userWeight = profile?.weight ?? DEFAULT_USER_WEIGHT;
@@ -109,6 +113,11 @@ export default function LogWorkout() {
       return;
     }
 
+    if (!canLog) {
+      setShowPaywall(true);
+      return;
+    }
+
     const exerciseLogs: ExerciseLog[] = exercises.map((e) => {
       const preset = PRESET_EXERCISES.find((p) => p.name === e.name);
       const met = preset ? preset.met : 4.0;
@@ -129,6 +138,7 @@ export default function LogWorkout() {
 
     try {
       await logWorkout({ date, exercises: exerciseLogs });
+      incrementTrial();
       toast.success("Workout logged successfully!");
       navigate({ to: "/" });
     } catch {
@@ -138,6 +148,11 @@ export default function LogWorkout() {
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-2xl">
+      <SubscriptionModal
+        open={showPaywall}
+        onClose={() => setShowPaywall(false)}
+      />
+
       <motion.div
         initial={{ opacity: 0, y: 16 }}
         animate={{ opacity: 1, y: 0 }}

@@ -3,21 +3,24 @@ import { cn } from "@/lib/utils";
 import { Link, Outlet, useNavigate } from "@tanstack/react-router";
 import { useLocation } from "@tanstack/react-router";
 import {
+  Bot,
   ClipboardList,
-  Dumbbell,
   History,
   LayoutDashboard,
   Lightbulb,
   LogOut,
   Menu,
   Plus,
+  Sparkles,
   User,
   X,
 } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
-import { useEffect } from "react";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { useSubscription } from "../context/SubscriptionContext";
 import { useInternetIdentity } from "../hooks/useInternetIdentity";
+import AdBanner from "./AdBanner";
+import InterstitialAd from "./InterstitialAd";
 
 const navItems = [
   {
@@ -34,6 +37,7 @@ const navItems = [
     icon: Lightbulb,
     ocid: "nav.suggestions.link",
   },
+  { to: "/mentor", label: "AI Mentor", icon: Bot, ocid: "nav.mentor.link" },
   { to: "/profile", label: "Profile", icon: User, ocid: "nav.profile.link" },
   {
     to: "/survey",
@@ -48,6 +52,24 @@ export default function Layout() {
   const navigate = useNavigate();
   const [mobileOpen, setMobileOpen] = useState(false);
   const location = useLocation();
+  const { isSubscribed, trialLogsRemaining, trialLogsUsed } = useSubscription();
+
+  // Interstitial ad logic
+  const navCountRef = useRef(0);
+  const [showAd, setShowAd] = useState(false);
+  const prevPathRef = useRef(location.pathname);
+
+  useEffect(() => {
+    if (location.pathname !== prevPathRef.current) {
+      prevPathRef.current = location.pathname;
+      if (!isSubscribed) {
+        navCountRef.current += 1;
+        if (navCountRef.current % 3 === 0) {
+          setShowAd(true);
+        }
+      }
+    }
+  }, [location.pathname, isSubscribed]);
 
   useEffect(() => {
     if (!isInitializing && !identity) {
@@ -62,14 +84,23 @@ export default function Layout() {
     navigate({ to: "/login" });
   };
 
+  const trialActive = !isSubscribed && trialLogsUsed < 5;
+
   return (
     <div className="min-h-screen flex flex-col">
+      {/* Interstitial Ad */}
+      <InterstitialAd show={showAd} onClose={() => setShowAd(false)} />
+
       {/* Top Nav */}
       <header className="sticky top-0 z-50 border-b border-border bg-background/90 backdrop-blur-md">
         <div className="container mx-auto px-4 h-16 flex items-center justify-between">
           <Link to="/" className="flex items-center gap-2.5 group">
-            <div className="w-8 h-8 rounded-lg bg-primary/10 border border-primary/30 flex items-center justify-center transition-all group-hover:glow-lime">
-              <Dumbbell className="w-4 h-4 text-primary" strokeWidth={2} />
+            <div className="w-8 h-8 rounded-lg bg-primary/10 border border-primary/30 flex items-center justify-center transition-all group-hover:glow-lime overflow-hidden">
+              <img
+                src="/assets/generated/logo-transparent.dim_200x200.png"
+                alt="FitLogger AI logo"
+                className="w-7 h-7 object-cover rounded-lg"
+              />
             </div>
             <span className="font-display font-bold text-lg text-gradient-lime">
               FitLogger AI
@@ -86,20 +117,63 @@ export default function Layout() {
                   to={item.to}
                   data-ocid={item.ocid}
                   className={cn(
-                    "flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all",
+                    "relative flex flex-col items-center gap-0.5 px-3 py-2 rounded-lg text-sm font-medium transition-all",
                     isActive
                       ? "bg-primary/10 text-primary"
                       : "text-muted-foreground hover:text-foreground hover:bg-secondary",
                   )}
                 >
-                  <item.icon className="w-4 h-4" />
-                  {item.label}
+                  <div className="flex items-center gap-2">
+                    <item.icon className="w-4 h-4" />
+                    {item.label}
+                  </div>
+                  {isActive && (
+                    <motion.div
+                      layoutId="nav-active-dot"
+                      className="absolute -bottom-0.5 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-primary"
+                      transition={{
+                        type: "spring",
+                        stiffness: 400,
+                        damping: 30,
+                      }}
+                    />
+                  )}
                 </Link>
               );
             })}
           </nav>
 
           <div className="flex items-center gap-2">
+            {/* Trial badge */}
+            {trialActive && (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                className="hidden md:flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold"
+                style={{
+                  background: "oklch(0.84 0.24 130 / 0.12)",
+                  color: "oklch(0.84 0.24 130)",
+                  border: "1px solid oklch(0.84 0.24 130 / 0.3)",
+                }}
+                data-ocid="trial.badge.panel"
+              >
+                <Sparkles className="w-3 h-3" />
+                {trialLogsRemaining} free session
+                {trialLogsRemaining !== 1 ? "s" : ""} left
+              </motion.div>
+            )}
+            {isSubscribed && (
+              <div
+                className="hidden md:flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold"
+                style={{
+                  background: "oklch(0.68 0.22 45 / 0.12)",
+                  color: "oklch(0.68 0.22 45)",
+                  border: "1px solid oklch(0.68 0.22 45 / 0.3)",
+                }}
+              >
+                ✦ Pro
+              </div>
+            )}
             <Button
               variant="ghost"
               size="sm"
@@ -135,6 +209,21 @@ export default function Layout() {
               className="overflow-hidden border-t border-border md:hidden"
             >
               <nav className="flex flex-col p-3 gap-1">
+                {trialActive && (
+                  <div
+                    className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold mb-1"
+                    style={{
+                      background: "oklch(0.84 0.24 130 / 0.1)",
+                      color: "oklch(0.84 0.24 130)",
+                      border: "1px solid oklch(0.84 0.24 130 / 0.2)",
+                    }}
+                    data-ocid="trial.badge.panel"
+                  >
+                    <Sparkles className="w-3 h-3" />
+                    {trialLogsRemaining} free session
+                    {trialLogsRemaining !== 1 ? "s" : ""} left
+                  </div>
+                )}
                 {navItems.map((item) => {
                   const isActive = location.pathname === item.to;
                   return (
@@ -173,6 +262,8 @@ export default function Layout() {
       <main className="flex-1">
         <Outlet />
       </main>
+
+      <AdBanner />
 
       <footer className="border-t border-border py-6 text-center text-sm text-muted-foreground">
         © {new Date().getFullYear()}. Built with ❤️ using{" "}

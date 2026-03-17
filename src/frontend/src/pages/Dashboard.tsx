@@ -1,7 +1,7 @@
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Link } from "@tanstack/react-router";
 import {
@@ -114,6 +114,39 @@ function calcSessionWeight(
   );
 }
 
+const statCardConfig = [
+  {
+    gradientFrom: "oklch(0.84 0.24 130 / 0.18)",
+    gradientTo: "transparent",
+    borderColor: "oklch(0.84 0.24 130 / 0.5)",
+    valueClass: "text-gradient-lime",
+    iconBg: "bg-primary/10",
+    iconClass: "text-primary",
+    glowClass: "glow-lime-hover",
+    icon: Trophy,
+  },
+  {
+    gradientFrom: "oklch(0.68 0.22 45 / 0.18)",
+    gradientTo: "transparent",
+    borderColor: "oklch(0.68 0.22 45 / 0.5)",
+    valueClass: "text-accent",
+    iconBg: "bg-accent/10",
+    iconClass: "text-accent",
+    glowClass: "glow-accent-hover",
+    icon: Dumbbell,
+  },
+  {
+    gradientFrom: "oklch(0.6 0.25 20 / 0.18)",
+    gradientTo: "transparent",
+    borderColor: "oklch(0.6 0.25 20 / 0.5)",
+    valueClass: "text-destructive",
+    iconBg: "bg-destructive/10",
+    iconClass: "text-destructive",
+    glowClass: "glow-destructive-hover",
+    icon: Flame,
+  },
+];
+
 export default function Dashboard() {
   const { data: stats, isLoading: statsLoading } = useSessionStats();
   const { data: sessions, isLoading: sessionsLoading } = useWorkoutSessions();
@@ -133,9 +166,6 @@ export default function Dashboard() {
         : stats
           ? Number(stats.totalSessions)
           : SAMPLE_SESSIONS.length,
-      icon: Trophy,
-      color: "text-primary",
-      bg: "bg-primary/10",
     },
     {
       label: "Total Weight Lifted",
@@ -144,9 +174,6 @@ export default function Dashboard() {
         : stats
           ? `${stats.totalWeightLifted.toLocaleString()} kg`
           : `${SAMPLE_SESSIONS.reduce((s, sess) => s + calcSessionWeight(sess.exercises), 0).toLocaleString()} kg`,
-      icon: Dumbbell,
-      color: "text-accent",
-      bg: "bg-accent/10",
     },
     {
       label: "Calories Burned",
@@ -155,9 +182,6 @@ export default function Dashboard() {
         : stats
           ? `${Math.round(stats.totalCaloriesBurned).toLocaleString()} kcal`
           : `${Math.round(SAMPLE_SESSIONS.reduce((s, sess) => s + sess.totalCalories, 0)).toLocaleString()} kcal`,
-      icon: Flame,
-      color: "text-destructive",
-      bg: "bg-destructive/10",
     },
   ];
 
@@ -219,48 +243,108 @@ export default function Dashboard() {
 
       {/* Stats */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
-        {statCards.map((stat, i) => (
-          <motion.div
-            key={stat.label}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 + i * 0.08 }}
-          >
-            <Card className="card-elevated" data-ocid="dashboard.stats.card">
-              <CardContent className="pt-6">
-                <div className="flex items-start justify-between">
-                  <div>
-                    <p className="text-sm text-muted-foreground">
-                      {stat.label}
-                    </p>
-                    {stat.value === null ? (
-                      <Skeleton
-                        className="h-8 w-24 mt-1"
-                        data-ocid="dashboard.stats.loading_state"
-                      />
-                    ) : (
-                      <p className="text-2xl font-display font-bold mt-1">
-                        {stat.value}
+        {statCards.map((stat, i) => {
+          const cfg = statCardConfig[i];
+          const StatIcon = cfg.icon;
+          return (
+            <motion.div
+              key={stat.label}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.1 + i * 0.08 }}
+            >
+              <Card
+                className={`card-elevated transition-transform hover:scale-[1.02] cursor-default ${cfg.glowClass}`}
+                style={{
+                  borderTopColor: cfg.borderColor,
+                  borderTopWidth: "1px",
+                  background: `linear-gradient(180deg, ${cfg.gradientFrom} 0%, oklch(var(--card)) 40%)`,
+                }}
+                data-ocid="dashboard.stats.card"
+              >
+                <CardContent className="pt-6">
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <p className="text-sm text-muted-foreground">
+                        {stat.label}
                       </p>
-                    )}
+                      {stat.value === null ? (
+                        <Skeleton
+                          className="h-8 w-24 mt-1"
+                          data-ocid="dashboard.stats.loading_state"
+                        />
+                      ) : (
+                        <p
+                          className={`text-2xl font-display font-bold mt-1 ${cfg.valueClass}`}
+                        >
+                          {stat.value}
+                        </p>
+                      )}
+                    </div>
+                    <div
+                      className={`w-10 h-10 rounded-xl ${cfg.iconBg} flex items-center justify-center transition-all ${cfg.glowClass}`}
+                    >
+                      <StatIcon className={`w-5 h-5 ${cfg.iconClass}`} />
+                    </div>
                   </div>
-                  <div
-                    className={`w-10 h-10 rounded-xl ${stat.bg} flex items-center justify-center`}
-                  >
-                    <stat.icon className={`w-5 h-5 ${stat.color}`} />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </motion.div>
-        ))}
+                </CardContent>
+              </Card>
+            </motion.div>
+          );
+        })}
       </div>
+
+      {/* Feature image cards */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.3 }}
+        className="grid grid-cols-2 gap-4 mb-8"
+      >
+        <Link
+          to="/log"
+          data-ocid="dashboard.workout.card"
+          className="group block rounded-xl overflow-hidden relative h-44 shadow-md hover:shadow-primary/20 transition-shadow"
+        >
+          <img
+            src="/assets/generated/workout-barbell.dim_600x400.jpg"
+            alt="Barbell strength training"
+            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
+          <div className="absolute bottom-0 left-0 p-4">
+            <p className="text-white font-display font-bold text-lg leading-tight">
+              Strength Training
+            </p>
+            <p className="text-white/70 text-xs mt-0.5">Log every rep</p>
+          </div>
+        </Link>
+
+        <Link
+          to="/suggestions"
+          data-ocid="dashboard.nutrition.card"
+          className="group block rounded-xl overflow-hidden relative h-44 shadow-md hover:shadow-accent/20 transition-shadow"
+        >
+          <img
+            src="/assets/generated/nutrition-meal.dim_600x400.jpg"
+            alt="Healthy nutrition meal prep"
+            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
+          <div className="absolute bottom-0 left-0 p-4">
+            <p className="text-white font-display font-bold text-lg leading-tight">
+              Nutrition Tracker
+            </p>
+            <p className="text-white/70 text-xs mt-0.5">Fuel your gains</p>
+          </div>
+        </Link>
+      </motion.div>
 
       {/* Recent Sessions */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.35 }}
+        transition={{ delay: 0.4 }}
       >
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-xl font-display font-semibold">
@@ -293,7 +377,7 @@ export default function Dashboard() {
                 key={`${session.date}-${i}`}
                 initial={{ opacity: 0, x: -12 }}
                 animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: 0.4 + i * 0.06 }}
+                transition={{ delay: 0.45 + i * 0.06 }}
               >
                 <Card className="card-elevated hover:border-primary/40 transition-all cursor-pointer">
                   <CardContent className="py-4 px-5">

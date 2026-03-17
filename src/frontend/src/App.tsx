@@ -7,10 +7,14 @@ import {
   createRouter,
 } from "@tanstack/react-router";
 import Layout from "./components/Layout";
+import { SubscriptionProvider } from "./context/SubscriptionContext";
+import AIMentor from "./pages/AIMentor";
 import Dashboard from "./pages/Dashboard";
 import History from "./pages/History";
 import LogWorkout from "./pages/LogWorkout";
 import LoginPage from "./pages/Login";
+import PaymentFailure from "./pages/PaymentFailure";
+import PaymentSuccess from "./pages/PaymentSuccess";
 import ProfilePage from "./pages/Profile";
 import Suggestions from "./pages/Suggestions";
 import Survey from "./pages/Survey";
@@ -28,6 +32,18 @@ const loginRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/login",
   component: LoginPage,
+});
+
+const paymentSuccessRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/payment-success",
+  component: PaymentSuccess,
+});
+
+const paymentFailureRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/payment-failure",
+  component: PaymentFailure,
 });
 
 const layoutRoute = createRoute({
@@ -72,8 +88,16 @@ const surveyRoute = createRoute({
   component: Survey,
 });
 
+const mentorRoute = createRoute({
+  getParentRoute: () => layoutRoute,
+  path: "/mentor",
+  component: AIMentor,
+});
+
 const routeTree = rootRoute.addChildren([
   loginRoute,
+  paymentSuccessRoute,
+  paymentFailureRoute,
   layoutRoute.addChildren([
     indexRoute,
     logRoute,
@@ -81,6 +105,7 @@ const routeTree = rootRoute.addChildren([
     suggestionsRoute,
     profileRoute,
     surveyRoute,
+    mentorRoute,
   ]),
 ]);
 
@@ -93,5 +118,9 @@ declare module "@tanstack/react-router" {
 }
 
 export default function App() {
-  return <RouterProvider router={router} />;
+  return (
+    <SubscriptionProvider>
+      <RouterProvider router={router} />
+    </SubscriptionProvider>
+  );
 }
