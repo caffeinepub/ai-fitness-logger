@@ -16,8 +16,9 @@ export default {
     },
     extend: {
       fontFamily: {
-        display: ["Bricolage Grotesque", "sans-serif"],
-        body: ["Satoshi", "sans-serif"],
+        display: ["Bebas Neue", "sans-serif"],
+        body: ["Barlow", "sans-serif"],
+        condensed: ["Barlow Condensed", "sans-serif"],
       },
       colors: {
         border: "oklch(var(--border))",

@@ -83,7 +83,7 @@ export default function LoginPage() {
             </div>
           </div>
           <div className="text-center">
-            <h1 className="text-4xl font-display font-bold text-gradient-lime">
+            <h1 className="text-4xl font-display text-gradient-lime">
               AI Fitness Logger
             </h1>
             <p className="mt-2 text-muted-foreground text-lg">
@@ -100,13 +100,13 @@ export default function LoginPage() {
           className="w-full rounded-xl overflow-hidden relative h-36 shadow-lg"
         >
           <img
-            src="/assets/generated/hero-gym.dim_900x400.jpg"
+            src="/assets/generated/gym-hero.dim_1200x600.jpg"
             alt="Modern gym with equipment"
             className="w-full h-full object-cover"
           />
           <div className="absolute inset-0 bg-gradient-to-r from-background/70 via-background/30 to-transparent" />
           <div className="absolute bottom-3 left-4">
-            <p className="text-sm font-semibold text-foreground">
+            <p className="text-sm font-condensed font-semibold tracking-wider uppercase text-foreground">
               Your gym. Your gains.
             </p>
             <p className="text-xs text-muted-foreground">
@@ -117,7 +117,7 @@ export default function LoginPage() {
 
         <div className="w-full card-elevated rounded-2xl p-8 flex flex-col gap-6">
           <div className="flex flex-col gap-2">
-            <h2 className="text-xl font-display font-semibold">Welcome back</h2>
+            <h2 className="text-xl font-display">Welcome back</h2>
             <p className="text-sm text-muted-foreground">
               Sign in to access your workout dashboard and track your progress.
             </p>

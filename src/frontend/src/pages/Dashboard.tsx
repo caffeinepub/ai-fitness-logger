@@ -14,6 +14,14 @@ import {
   Trophy,
 } from "lucide-react";
 import { motion } from "motion/react";
+import {
+  Bar,
+  BarChart,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from "recharts";
 import { useStreak } from "../context/StreakContext";
 import {
   useSessionStats,
@@ -96,7 +104,75 @@ const SAMPLE_SESSIONS = [
     ],
     totalCalories: 184,
   },
+  {
+    date: "2026-03-18",
+    exercises: [
+      {
+        name: "Romanian Deadlift",
+        sets: BigInt(4),
+        reps: BigInt(10),
+        weight: 90,
+        caloriesBurned: 144,
+        metValue: 5.0,
+      },
+      {
+        name: "Dumbbell Curl",
+        sets: BigInt(3),
+        reps: BigInt(12),
+        weight: 20,
+        caloriesBurned: 54,
+        metValue: 3.0,
+      },
+    ],
+    totalCalories: 198,
+  },
+  {
+    date: "2026-03-20",
+    exercises: [
+      {
+        name: "Incline Press",
+        sets: BigInt(4),
+        reps: BigInt(8),
+        weight: 70,
+        caloriesBurned: 112,
+        metValue: 5.0,
+      },
+      {
+        name: "Cable Row",
+        sets: BigInt(3),
+        reps: BigInt(12),
+        weight: 60,
+        caloriesBurned: 81,
+        metValue: 4.5,
+      },
+    ],
+    totalCalories: 193,
+  },
+  {
+    date: "2026-03-22",
+    exercises: [
+      {
+        name: "Front Squat",
+        sets: BigInt(4),
+        reps: BigInt(6),
+        weight: 85,
+        caloriesBurned: 136,
+        metValue: 5.5,
+      },
+      {
+        name: "Dips",
+        sets: BigInt(3),
+        reps: BigInt(12),
+        weight: 0,
+        caloriesBurned: 72,
+        metValue: 4.0,
+      },
+    ],
+    totalCalories: 208,
+  },
 ];
+
+const DAY_LABELS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
 function formatDate(dateStr: string) {
   return new Date(dateStr).toLocaleDateString("en-US", {
@@ -115,6 +191,50 @@ function calcSessionWeight(
   );
 }
 
+function buildCaloriesWeekData(
+  sessions: { date: string; totalCalories: number }[],
+) {
+  const today = new Date();
+  const result: { day: string; calories: number }[] = [];
+  for (let i = 6; i >= 0; i--) {
+    const d = new Date(today);
+    d.setDate(today.getDate() - i);
+    const iso = d.toISOString().slice(0, 10);
+    const dayLabel = DAY_LABELS[d.getDay()];
+    const total = sessions
+      .filter((s) => s.date === iso)
+      .reduce((sum, s) => sum + s.totalCalories, 0);
+    result.push({ day: dayLabel, calories: Math.round(total) });
+  }
+  return result;
+}
+
+function buildWeightPerSessionData(
+  sessions: {
+    date: string;
+    exercises: { weight: number; sets: bigint; reps: bigint }[];
+  }[],
+) {
+  return [...sessions]
+    .sort((a, b) => a.date.localeCompare(b.date))
+    .slice(-6)
+    .map((s) => ({
+      date: new Date(s.date).toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric",
+      }),
+      weight: calcSessionWeight(s.exercises),
+    }));
+}
+
+const darkTooltipStyle = {
+  backgroundColor: "oklch(0.15 0.01 265)",
+  border: "1px solid oklch(0.24 0.012 265)",
+  borderRadius: "8px",
+  color: "oklch(0.96 0.005 90)",
+  fontSize: "12px",
+};
+
 export default function Dashboard() {
   const { data: stats, isLoading: statsLoading } = useSessionStats();
   const { data: sessions, isLoading: sessionsLoading } = useWorkoutSessions();
@@ -126,6 +246,9 @@ export default function Dashboard() {
   const recentSessions = [...displaySessions]
     .sort((a, b) => b.date.localeCompare(a.date))
     .slice(0, 5);
+
+  const caloriesWeekData = buildCaloriesWeekData(displaySessions);
+  const weightPerSessionData = buildWeightPerSessionData(displaySessions);
 
   const statCardConfig = [
     {
@@ -198,7 +321,7 @@ export default function Dashboard() {
         className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8"
       >
         <div>
-          <h1 className="text-3xl font-display font-bold">
+          <h1 className="text-3xl font-display">
             {profile ? `Hey, ${profile.name.split(" ")[0]} 👋` : "Dashboard"}
           </h1>
           <p className="text-muted-foreground mt-1">
@@ -279,7 +402,7 @@ export default function Dashboard() {
                         />
                       ) : (
                         <p
-                          className={`text-xl font-display font-bold mt-1 ${
+                          className={`text-xl font-display mt-1 ${
                             cfg.valueClass ?? ""
                           }`}
                           style={cfg.valueStyle}
@@ -304,6 +427,93 @@ export default function Dashboard() {
         })}
       </div>
 
+      {/* Charts */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.28 }}
+        className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-8"
+      >
+        {/* Chart 1: Calories This Week */}
+        <div className="card-elevated rounded-xl p-4">
+          <div className="flex items-center gap-2 mb-3">
+            <Flame
+              className="w-4 h-4"
+              style={{ color: "oklch(0.68 0.25 35)" }}
+            />
+            <h3 className="text-sm font-condensed font-semibold tracking-wide uppercase text-muted-foreground">
+              Calories This Week
+            </h3>
+          </div>
+          <ResponsiveContainer width="100%" height={200}>
+            <BarChart
+              data={caloriesWeekData}
+              margin={{ top: 4, right: 4, left: -20, bottom: 0 }}
+            >
+              <XAxis
+                dataKey="day"
+                tick={{ fill: "oklch(0.55 0.012 265)", fontSize: 11 }}
+                axisLine={false}
+                tickLine={false}
+              />
+              <YAxis
+                tick={{ fill: "oklch(0.55 0.012 265)", fontSize: 10 }}
+                axisLine={false}
+                tickLine={false}
+              />
+              <Tooltip
+                contentStyle={darkTooltipStyle}
+                cursor={{ fill: "oklch(0.84 0.24 130 / 0.06)" }}
+                formatter={(value: number) => [`${value} kcal`, "Calories"]}
+              />
+              <Bar
+                dataKey="calories"
+                fill="oklch(0.68 0.25 35)"
+                radius={[4, 4, 0, 0]}
+              />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+
+        {/* Chart 2: Weight Lifted Per Session */}
+        <div className="card-elevated rounded-xl p-4">
+          <div className="flex items-center gap-2 mb-3">
+            <Dumbbell className="w-4 h-4 text-primary" />
+            <h3 className="text-sm font-condensed font-semibold tracking-wide uppercase text-muted-foreground">
+              Weight Per Session
+            </h3>
+          </div>
+          <ResponsiveContainer width="100%" height={200}>
+            <BarChart
+              data={weightPerSessionData}
+              margin={{ top: 4, right: 4, left: -20, bottom: 0 }}
+            >
+              <XAxis
+                dataKey="date"
+                tick={{ fill: "oklch(0.55 0.012 265)", fontSize: 10 }}
+                axisLine={false}
+                tickLine={false}
+              />
+              <YAxis
+                tick={{ fill: "oklch(0.55 0.012 265)", fontSize: 10 }}
+                axisLine={false}
+                tickLine={false}
+              />
+              <Tooltip
+                contentStyle={darkTooltipStyle}
+                cursor={{ fill: "oklch(0.84 0.24 130 / 0.06)" }}
+                formatter={(value: number) => [`${value} kg`, "Volume"]}
+              />
+              <Bar
+                dataKey="weight"
+                fill="oklch(0.84 0.24 130)"
+                radius={[4, 4, 0, 0]}
+              />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+      </motion.div>
+
       {/* Feature image cards */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
@@ -317,13 +527,13 @@ export default function Dashboard() {
           className="group block rounded-xl overflow-hidden relative h-44 shadow-md hover:shadow-primary/20 transition-shadow"
         >
           <img
-            src="/assets/generated/workout-barbell.dim_600x400.jpg"
+            src="/assets/generated/gym-hero.dim_1200x600.jpg"
             alt="Barbell strength training"
             className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
           />
           <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
           <div className="absolute bottom-0 left-0 p-4">
-            <p className="text-white font-display font-bold text-lg leading-tight">
+            <p className="text-white font-display text-lg leading-tight">
               Strength Training
             </p>
             <p className="text-white/70 text-xs mt-0.5">Log every rep</p>
@@ -351,7 +561,7 @@ export default function Dashboard() {
             <div className="text-4xl">🔥</div>
             <div>
               <p
-                className="font-display font-bold text-lg leading-tight"
+                className="font-display text-lg leading-tight"
                 style={{ color: "oklch(0.9 0.12 45)" }}
               >
                 Streaks & Challenges
@@ -367,6 +577,34 @@ export default function Dashboard() {
         </Link>
       </motion.div>
 
+      {/* Motivational gym banner */}
+      <motion.div
+        initial={{ opacity: 0, y: 16 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.35 }}
+        className="relative h-32 rounded-xl overflow-hidden mb-8"
+      >
+        <img
+          src="/assets/generated/gym-pullup.dim_600x400.jpg"
+          alt="Athlete doing pull-ups"
+          className="w-full h-full object-cover"
+        />
+        <div className="absolute inset-0 bg-gradient-to-r from-black/75 via-black/40 to-transparent" />
+        <div className="absolute inset-0 flex items-center px-6">
+          <div>
+            <p
+              className="font-display text-3xl"
+              style={{ color: "oklch(0.84 0.24 130)" }}
+            >
+              NO DAYS OFF
+            </p>
+            <p className="text-white/60 text-sm mt-0.5 font-condensed tracking-widest uppercase">
+              Consistency builds champions
+            </p>
+          </div>
+        </div>
+      </motion.div>
+
       {/* Recent Sessions */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
@@ -374,9 +612,7 @@ export default function Dashboard() {
         transition={{ delay: 0.4 }}
       >
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-xl font-display font-semibold">
-            Recent Sessions
-          </h2>
+          <h2 className="text-xl font-display">Recent Sessions</h2>
           <Link to="/history" data-ocid="nav.history.link">
             <Button
               variant="ghost"
